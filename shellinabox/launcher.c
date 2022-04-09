@@ -740,8 +740,9 @@ void closeAllFds(int *exceptFds, int num) {
     no_close_1:;
     }
   } else {
-    struct dirent de, *res;
-    while (!readdir_r(dir, &de, &res) && res) {
+    // fix warning: ‘readdir_r’ is deprecated
+    struct dirent *res;
+    while ((res = readdir(dir)) != NULL) {
       if (res->d_name[0] < '0')
         continue;
       int fd  = atoi(res->d_name);
@@ -1657,7 +1658,12 @@ static void childProcess(struct Service *service, int width, int height,
   if (!*service->cwd || *service->cwd != '/' || chdir(service->cwd)) {
     check(service->cwd          = realloc((char *)service->cwd, 2));
     *(char *)service->cwd       = '\000';
-    strncat((char *)service->cwd, "/", 1);
+    
+    // fix warning: ‘strncat’ specified bound 1 equals source
+    //strncat((char *)service->cwd, "/", 1);
+    ((char *)service->cwd)[0]    = '/';
+    ((char *)service->cwd)[1]    = '\0';
+    
     puts("No directory, logging in with HOME=/");
     check(!chdir("/"));
     for (int i = 0; environment[i]; i++) {
